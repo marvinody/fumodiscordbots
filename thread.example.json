@@ -1,0 +1,10 @@
+{
+  "discord_webhook_url": "main webhook url",
+  "sadpanda_user": "sadpanda username.",
+  "sp_gid": 76702155,
+  "sadpanda_pass": "sadpanda password",
+  "upload_to_sadpanda": false,
+  "pno": 18081953,
+  "thread": 18004001,
+  "discord_webhook_url_fumo": "secondary url that fires when fumo detected"
+}

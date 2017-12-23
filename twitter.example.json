@@ -1,0 +1,9 @@
+{
+  "cons_key": "twitter cons key",
+  "access_token_secret": "twitter access token secret",
+  "since_id": 933997977902841856,
+  "since_id_for_list": 944573665760309248,
+  "cons_secret": "twitter cons secret",
+  "access_token": "twitter access token",
+  "discord_webhook_url": "your twitter discord url"
+}
