@@ -6,7 +6,7 @@ Most, if not all, of them don't follow any real standards or common practices be
 
 There's a lot of repeated code in places, because I just copied the first version and rolled with it
 I left most files without a main because of scope issues and it made it 10x easier to write initally. And most of them print out 'useless' data but I have a logrotate conf to zip them up so it shouldn't take up much space. Around 2 MB for all the logs
-Fumo detector comes with the models, but you probably need to install [object\_detection](https://github.com/tensorflow/models/tree/master/research/object\_detection)
+Fumo detector comes with the models, but you probably need to install [object\_detection](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/installation.md)
 ---
 Bots for
 
