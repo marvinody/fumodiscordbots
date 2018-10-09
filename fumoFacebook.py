@@ -12,7 +12,7 @@ import time
 
 def send_message(message):
     global url
-    payload = {'content': message,'username': 'Fumo Facebook'}
+    payload = {'content': message}
     requests.post(url,payload)
 
 

@@ -17,8 +17,10 @@ import cv2
 from urllib.request import urlopen
 import fumo_detector
 
-def update_thread(thread_json):
+def update_thread():
+    # bad habit but this way I don't have to pass in everywhere
     global data
+    thread_json = requests.get(json_url_format % ('jp',data['thread'])).json()
     files = []
     for post in thread_json['posts']:
         if(post['no'] > data['pno']):
@@ -36,6 +38,7 @@ def update_thread(thread_json):
             time.sleep(1)#delay to prevent spamming links?
             #discord ended up eating a bunch of posts even though they were logged
             #half second seems to be fine for the rate limiting
+            save_json()
     if 'sp_gid' in data:
         sadpanda_add(files, data['sp_gid'])
 
@@ -95,29 +98,36 @@ def save_json():
     with open(json_file, "w") as outfile:
         json.dump(data, outfile, indent=2)
 
+def load_new_thread():
+    global data
+    attempt = find_new_thread()
+    mention_str = ''
+    if attempt is not None:
+        data['thread'] = attempt
+        data['sp_gid'] = sadpanda_create("Fumo - #"+str(attempt))
+        data['pno'] = attempt-1#make sure to print out THIS post, so sub 1
+        send_message(mention_str + ' new thread loaded')
+        return True
+    else:
+        #did not find, ask user to get new one
+        #send_message(mention_str + ' could not find a thread, verify code or make new thread')
+        return False
+
 def check_new_data():
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     global data
 
-    r = requests.get(json_url_format % ('jp',data['thread']))
-    if r.status_code == 404 or ('archived' in r.json()['posts'][0] and r.json()['posts'][0]['archived']==1):
-        attempt = find_new_thread()
-
-        mention_str = ''
-        if attempt is not None:
-            data['thread'] = attempt
-            data['sp_gid'] = sadpanda_create("Fumo - #"+str(attempt))
-            data['pno'] = attempt-1#make sure to print out THIS post, so sub 1
-            r = requests.get(json_url_format % ('jp',data['thread']))#update r
-            send_message(mention_str + ' new thread loaded')
-        else:
-            #did not find, ask user to get new one
-
-            #send_message(mention_str + ' could not find a thread, verify code or make new thread')
+    if 'thread' not in data:
+        if not load_new_thread():
             return
-    #found new thread, can continue to update
-    update_thread(r.json())
+    else:
+        r = requests.get(json_url_format % ('jp',data['thread']))
+        if r.status_code == 404 or ('archived' in r.json()['posts'][0] and r.json()['posts'][0]['archived']==1):
+            if not load_new_thread():
+                return
+
+    update_thread()
     save_json()
     print("Saving JSON")
 
@@ -126,19 +136,42 @@ def find_new_thread():
     r = requests.get(url)
     json_r = r.json()
 
+    # So this was my stupid idea to fix finding false threads
+    # It won't stop from picking a random thread if 2 pop up at same time
+    # but it will stop picking a thread that only mentions the word fumo once
+    # hence the -5 on fate
+    points_needed = 40
+
+    poss_fields = {
+        'semantic_url':[
+            {'string':'fumo', 'points': points_needed}
+        ],
+        'sub':[
+            {'string':'fumo', 'points': points_needed}
+        ],
+        'com':[
+            {'string':'fumo', 'points': points_needed / 5},
+            {'string':'plush', 'points': points_needed / 5},
+            {'string':'fate', 'points': -points_needed / 5}
+        ]
+    }
+
     poss_fields_for_string = ['semantic_url','sub','com']
     search_string = 'fumo'
-    min_times_needed = 3
     poss_new_threads = [];
     for chunk in json_r:
         page = chunk['page']
         threads = chunk['threads']
-        for thread in threads:
-            for field in poss_fields_for_string:
+        for idx, thread in enumerate(threads):
+            thread_points = 0
+            for field,entries in poss_fields.items():
                 if field in thread:
-                    if thread[field].count(search_string) >= min_times_needed:
-                        poss_new_threads.append(thread)
-                        break
+                    for entry in entries:
+                        occurences = thread[field].count(entry['string'])
+                        points = occurences * entry['points']
+                        thread_points += points
+            if thread_points >= points_needed:
+                poss_new_threads.append(thread)
 
     if not poss_new_threads:
         return None
@@ -210,4 +243,5 @@ json_url_format = "https://a.4cdn.org/%s/thread/%i.json"
 catalog_url_format = "https://a.4cdn.org/%s/catalog.json"
 url = data['discord_webhook_url']
 fumo_detector_url = data['discord_webhook_url_fumo']
-check_new_data()
+if __name__ == '__main__':
+    check_new_data()

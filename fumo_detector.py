@@ -1,13 +1,14 @@
 #!/usr/bin/python3.5
 import numpy as np
-import os
-from PIL import Image
 import tensorflow as tf
 from object_detection.utils import label_map_util
 from object_detection.utils import visualization_utils as vis_util
 from urllib.request import urlopen
 import requests
 from io import BytesIO
+from numpy import array
+from PIL import Image
+
 # silence warnings about compiler
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL']='2'
@@ -17,7 +18,7 @@ _PATH_TO_LABELS = os.path.join(os.path.dirname(__file__), "fumoModel/object_dete
 
 NUM_CLASSES = 1
 
-MAX_PIXELS = 16e6 # 16 megapixels?
+MAX_PIXELS = 12e6 # 12 megapixels?
 # vps tends to freeze and crash when processing images over certain size
 
 # do some initial loading
@@ -45,7 +46,12 @@ detection_scores = _detection_graph.get_tensor_by_name('detection_scores:0')
 detection_classes = _detection_graph.get_tensor_by_name('detection_classes:0')
 num_detections = _detection_graph.get_tensor_by_name('num_detections:0')
 
-
+def resize_numpy_array_to_half(image):
+    img = Image.fromarray(image)
+    (im_width, im_height) = img.size
+    max_size = (im_height/2, im_height/2)
+    img.thumbnail(max_size)
+    return np.array(img)
 def _numpy_array_from_image(image):
     (im_width, im_height) = image.size
     return np.array(image.getdata()).reshape(
@@ -62,10 +68,11 @@ def _image_from_url(url):
 def check(image_url):
     raw_image_data = _image_from_url(image_url)
     (im_width, im_height) = raw_image_data.size
-    if im_width * im_height > MAX_PIXELS:
-        return 0
 
     image_np = _numpy_array_from_image(raw_image_data)
+
+    if im_width * im_height > MAX_PIXELS:
+        image_np = resize_numpy_array_to_half(image_np)
 
     image_np_expanded = np.expand_dims(image_np, axis=0)
     # Actual detection.
