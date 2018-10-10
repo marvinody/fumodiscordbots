@@ -60,8 +60,8 @@ def check_feed():
             data['cursor_before'] = feed_data['paging']['cursors']['before']
         else:
             keep_going = False
-    save_json()
-    print("Saving JSON")
+        save_json()
+        print("Saving JSON")
 
 
 def get_feed_before(token):
