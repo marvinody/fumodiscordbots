@@ -1,6 +1,8 @@
 /__pycache__/*
 /.idea/*
+/logs/*
 buyee.json
 facebook.json
 thread.json
 twitter.json
+launcher
