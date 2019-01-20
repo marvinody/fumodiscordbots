@@ -6,11 +6,6 @@ import dateutil.parser
 import sqlite3
 import time
 import os
-import sys
-import pprint
-from PIL import Image
-from urllib.request import urlopen
-import io
 from enum import Enum
 
 class ItemStatus(Enum):
