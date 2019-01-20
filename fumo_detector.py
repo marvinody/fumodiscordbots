@@ -7,6 +7,10 @@ from urllib.request import urlopen
 import requests
 from io import BytesIO
 from numpy import array
+# I had these in the vps for some reason, can't remember why. but gonna add them here
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 from PIL import Image
 
 # silence warnings about compiler
