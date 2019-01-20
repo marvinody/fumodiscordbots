@@ -6,6 +6,17 @@ import dateutil.parser
 import sqlite3
 import time
 import os
+import sys
+import pprint
+from PIL import Image
+from urllib.request import urlopen
+import io
+from enum import Enum
+
+class ItemStatus(Enum):
+    New = 1
+    Expiring = 2
+    Unchanged = 3
 
 
 def load_json_file():
@@ -14,55 +25,90 @@ def load_json_file():
         return data
 
 
-def pretty_print_seconds(time_left):
-    if time_left < 60:
-        text = "Seconds" if time_left > 1 else "Second"
-        return "%s Seconds" % time_left
-    ppt = []
-    if time_left / 60 >= 1:
-        minutes_left = int(time_left / 60)
-        sub_minutes = minutes_left % 60
-        if not sub_minutes == 0:
-            text = "Minutes" if sub_minutes > 1 else "Minute"
-            ppt.append("%s %s" % (sub_minutes, text))
-        time_left = minutes_left - sub_minutes
-    if time_left/60 >= 1:
-        hours_left = int(time_left / 60)
-        sub_hours = hours_left % 24
-        if not sub_hours == 0:
-            text = "Hours" if sub_hours > 1 else "Hour"
-            ppt.append("%s %s" % (sub_hours, text))
+def get_new_item_embed(item):
+    rating = item['Seller']['Rating']
+    # gen. some strings to not have it jumbled in dict
+    bid_string = "bid" if int(item['Bids']) == 1 else "bids"
+    initprice = item['Initprice'][:-3] if item['Initprice'].endswith(".00") else item['Initprice']
+    currprice = item['Price'][:-3] if item['Price'].endswith(".00") else item['Price']
+    # id is always letter followed by numbers
+    # chop off letter, -> hex -> get last 6 to ensure it's only 3 bytes -> back to dec.
+    hexStr = hex(int(item['AuctionID'][1:]))
+    color = int(hexStr[-6:], 16)
+    embed = {
+        'title':'【{}】 - {}'.format(item['AuctionID'], item['Seller']['Id']),
+        'description':'{}\n【[YAJ]({})】　【[Buyee]({})】\n'.format(
+            item['Title'],
+            item['AuctionItemUrl'],
+            item['AuctionItemUrl'].replace("page.auctions.yahoo.co.jp/jp", "buyee.jp/item/yahoo")
+        ),
+        'url':item['AuctionItemUrl'],
+        'footer':{
+            'text':'+{} | -{}　　{} {}　　　　　Ends at: '.format(
+            rating['TotalGoodRating'],
+            rating['TotalBadRating'],
+            item['Bids'], bid_string
+            ),
+        },
+        'fields': [
+            {
+                'name':'Opening Price:',
+                'value': "{:,}円".format(int(initprice)),
+                'inline': True
+            }, {
+                'name':'Current Price:',
+                'value': "{:,}円".format(int(currprice)),
+                'inline': True,
+            },
+        ],
+        'color':color,
+        'timestamp':item['EndTime'],
+        'image': {
+            #'url': item['Img']['Image1'],
+            'url': item['Thumbnails']['Thumbnail1'],
+        },
+    }
 
-        time_left = hours_left - sub_hours
-    if time_left/24 >= int(time_left / 24):
-        days_left = int(time_left / 24)
-        if not days_left == 0:
-            text = "Days" if days_left > 1 else "Day"
-            ppt.append("%s %s" % (days_left, text))
+    if 'Bidorbuy' in item:
+        if item['Bidorbuy'] == item['Price']:
+            # overwrite
+            embed['fields'] = [
+                {
+                    'name':'Buy it now for:',
+                    'value': "{:,}円".format(int(currprice)),
+                    'inline': True,
+                }
+            ]
+        else:
+            # append
+            embed['fields'].append({
+                'name':'Buyout Price:',
+                'value': "{:,}円".format(int(item['Bidorbuy'][:-3])),
+                'inline': True,
+            })
 
-    return ", ".join(reversed(ppt))
+    return embed
 
+def get_expiring_item_embed(item):
+    embed = get_new_item_embed(item)
+    embed['title'] += " - AUCTION ENDING"
+    return embed
 
-def get_new_item_str(item):
-    time_diff = dateutil.parser.parse(item['EndTime']) - datetime.now(timezone.utc)
-    output_str = "【%s】Current Bid:%s¥\nTime Left - %s\n%s" \
-                 % (item['AuctionID'],
-                    item['CurrentPrice'],
-                    pretty_print_seconds(time_diff.total_seconds()),
-                    item['AuctionItemUrl'])
-    return output_str
+# will return extended item info from the url in item.
+def fetch_extended_item_info(item):
+    url = item['ItemUrl']
+    return fetch_extended_item_info_from_url(url)
 
+def fetch_extended_item_info_from_url(url):
+    buyee_data = {
+        'appid': data['app_id'],
+        'output': 'json',
+    }
+    req = r.get(url, buyee_data)
+    resp_obj = parse_response(req.text)
+    return resp_obj['ResultSet']['Result']
 
-def get_expiring_item_str(item):
-    time_diff = dateutil.parser.parse(item['EndTime']) - datetime.now(timezone.utc)
-    output_str = "Auction Ending!【%s】Current Bid:%s¥\nTime Left - %s\n%s" \
-                 % (item['AuctionID'],
-                    item['CurrentPrice'],
-                    pretty_print_seconds(time_diff.total_seconds()),
-                    item['AuctionItemUrl'])
-    return output_str
-
-
+# have we posted about it before?
 def check_item(item):
     c.execute("SELECT AuctionID FROM auctions WHERE AuctionID=?", (item['AuctionID'],))
     if c.fetchone():
@@ -70,11 +116,11 @@ def check_item(item):
         largest_exp_time = 60 * 20
         smallest_exp_time = 60 * 6
         if smallest_exp_time <= time_diff.total_seconds() <= largest_exp_time:
-            return get_expiring_item_str(item)
-        return None
+            return ItemStatus.Expiring
+        return ItemStatus.Unchanged
 
     c.execute("INSERT INTO auctions VALUES (?)", (item['AuctionID'],))
-    return get_new_item_str(item)
+    return ItemStatus.New
 
 
 def parse_response(text):
@@ -86,19 +132,31 @@ def parse_response(text):
 
 def check_items(items):
     for item in items:
-        resp = check_item(item)
-        if resp:
-            print(resp)
-            send_message(resp)
-            conn.commit()
-            time.sleep(1)
+
+        status = check_item(item)
+        # don't care if item isn't new or about to expire
+        if status is ItemStatus.Unchanged:
+            continue
+        # commit any changes before we error somewhere and rollback
+        conn.commit()
+        # get more info about item to make embed
+        item = fetch_extended_item_info(item)
+        if status is ItemStatus.New:
+            resp = get_new_item_embed(item)
+        elif status is ItemStatus.Expiring:
+            resp = get_expiring_item_embed(item)
+        send_embed(resp)
+        # prevent discord rate limiting us
+        time.sleep(1)
 
 
-def send_message(message):
+def send_embed(embed):
     global discord_url
-    payload = {'content': message, 'username': 'Fumo Hunter'}
-    r.post(discord_url, payload)
-
+    payload = {'embeds': [embed], 'username': 'Fumo Hunter'}
+    payload_json = json.dumps(payload)
+    response = r.post(discord_url, payload_json, headers={'Content-Type':'application/json'})
+    if response.status_code != 200 and response.status_code != 204:
+        print("Error: ", response.text)
 
 def main():
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -116,7 +174,6 @@ def main():
         resp_obj = parse_response(req.text)
 
         check_items(resp_obj['ResultSet']['Result']['Item'])
-        print(resp_obj['ResultSet']['@attributes'])
         attr = resp_obj['ResultSet']['@attributes']
         next_id = int(attr['firstResultPosition']) - 1 + int(attr['totalResultsReturned'])
         if next_id == int(attr['totalResultsAvailable']):
