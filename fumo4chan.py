@@ -90,7 +90,8 @@ def fix_html_tags(com):
         m.replaceWithChildren()
     for br in soup.find_all('br'):
         br.replace_with('\n')
-    return soup.get_text()
+    text = soup.get_text()
+    return text.replace("<s>", "||").replace("</s>", "||")
 
 
 def send_message(message):
