@@ -138,12 +138,9 @@ def check_items(items):
         item = fetch_extended_item_info(item)
         if status is ItemStatus.New:
             resp = get_new_item_embed(item)
-        #elif status is ItemStatus.Expiring:
-        #    resp = get_expiring_item_embed(item)
-        send_embed(resp)
-        # prevent discord rate limiting us
-        time.sleep(1)
-
+            send_embed(resp)
+            # prevent discord rate limiting us
+            time.sleep(1)
 
 def send_embed(embed):
     global discord_url
