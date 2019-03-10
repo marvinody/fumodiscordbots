@@ -8,6 +8,7 @@ import requests
 from datetime import datetime
 import pprint
 from hashlib import md5
+import fumo_detector
 
 
 def load_json_file():
