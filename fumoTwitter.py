@@ -60,7 +60,6 @@ def get_twitter_embed(tweet, idx):
         embed['footer']['text'] = '{} images'.format(len(tweet.media))
     if tweet.truncated:
         embed['description'] = tweet.extended_tweet.full_text
-    print(json.dumps(embed, indent=4))
     return embed
 
 
