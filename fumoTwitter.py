@@ -120,6 +120,7 @@ def do_search(api, discord_url):
                     if tweet.media:  # should always be true
                         print('checking {}:{}'.format(tweet.user.screen_name, tweet.id_str))
                         for idx, media in enumerate(tweet.media):
+                            url = media.media_url
                             if fumo_detector.check(url) > 0:
                                 full_url = media.expanded_url
                                 try:
