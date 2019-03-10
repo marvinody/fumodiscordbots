@@ -70,18 +70,22 @@ def _image_from_url(url):
 # returns number of 'detected' fumos. doesn't really give numbers, but easier
 # to assume it does and work that way. don't care how many, just if there are
 def check(image_url):
-    raw_image_data = _image_from_url(image_url)
-    (im_width, im_height) = raw_image_data.size
+    try:
+        raw_image_data = _image_from_url(image_url)
+        (im_width, im_height) = raw_image_data.size
 
-    image_np = _numpy_array_from_image(raw_image_data)
+        image_np = _numpy_array_from_image(raw_image_data)
 
-    if im_width * im_height > MAX_PIXELS:
-        image_np = resize_numpy_array_to_half(image_np)
+        if im_width * im_height > MAX_PIXELS:
+            image_np = resize_numpy_array_to_half(image_np)
 
-    image_np_expanded = np.expand_dims(image_np, axis=0)
-    # Actual detection.
-    (boxes, scores, classes, num) = sess.run(
-        [detection_boxes, detection_scores, detection_classes, num_detections],
-        feed_dict={image_tensor: image_np_expanded})
-    filtered_scores = [x for x in np.squeeze(scores) if x > 0.5]
-    return len(filtered_scores)
+        image_np_expanded = np.expand_dims(image_np, axis=0)
+        # Actual detection.
+        (boxes, scores, classes, num) = sess.run(
+            [detection_boxes, detection_scores, detection_classes, num_detections],
+            feed_dict={image_tensor: image_np_expanded})
+        filtered_scores = [x for x in np.squeeze(scores) if x > 0.5]
+        return len(filtered_scores)
+    except ValueError as e:
+        print(e)
+        return 0
