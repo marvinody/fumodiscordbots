@@ -3,14 +3,11 @@ import sys
 import os
 import json
 import twitter
-import numpy as np
-import cv2
-from urllib.request import urlopen
 import urllib.parse
-import glob
 import requests
 from datetime import datetime
-import fumo_detector
+import pprint
+from hashlib import md5
 
 
 def load_json_file():
@@ -24,31 +21,46 @@ def save_json():
         json.dump(data, outfile, indent=2)
 
 
-def send_message(message):
-    global discord_url
-    payload = {'content':message,'username':'TWITTER BOT'}
-    requests.post(discord_url,payload)
+def send_embed(url, embed):
+    payload = {'embeds': [embed]}
+    payload_json = json.dumps(payload)
+    response = requests.post(url, payload_json, headers={'Content-Type': 'application/json'})
+    if response.status_code != 200 and response.status_code != 204:
+        print("Error: ", response.text)
 
 
-def do_mentions(api):
-    mentions = api.GetMentions(count=200, since_id=data['since_id'])
-    if mentions:
-        oldest_first = sorted(mentions, key=lambda k: k.id)
-        for mention in oldest_first:
-            if mention.media:
-                url = mention.media[0].media_url
-                print('checking %s:%s' % (mention.id, url))
-                if fumo_detector.check(url) > 0: # any fumos detected?
-                    print('detected fumo')
-                    full_url = mention.media[0].expanded_url
-                    api.PostRetweet(status_id=mention.id)
-                    send_message('%s' % full_url)
-                else:
-                    print('no soft girls in tweet')
-            data['since_id'] = mention.id
-    else:
-        print('no new tweets')
-    save_json()
+def get_twitter_embed(tweet, idx):
+    # idx is which image has the fumo
+    # pull the stamp into a datetime which has hardcoded UTC
+    # twitter says it'll always be UTC, so yeah
+    stamp = datetime.strptime(tweet.created_at, "%a %b %d %H:%M:%S +0000 %Y")
+    m = md5()
+    m.update(bytes(tweet.user.screen_name, 'utf8'))
+    # and then just pull the last 3 bytes and convert to int
+    color = int.from_bytes(m.digest()[-3:], "little")
+
+    embed = {
+        'description': tweet.text,
+        "author": {
+            "name": "{}(@{})".format(tweet.user.name, tweet.user.screen_name),
+            "url": "https://twitter.com/{}".format(tweet.user.screen_name),
+            "icon_url": tweet.user.profile_image_url_https,
+        },
+        'url': "https://twitter.com/{}/status/{}".format(tweet.user.screen_name, tweet.id_str),
+        'footer': {
+        },
+        'color': color,
+        'timestamp': stamp.isoformat(),
+        'image': {
+            'url': tweet.media[idx].media_url_https,
+        },
+    }
+    if len(tweet.media) > 1:
+        embed['footer']['text'] = '{} images'.format(len(tweet.media))
+    if tweet.truncated:
+        embed['description'] = tweet.extended_tweet.full_text
+    print(json.dumps(embed, indent=4))
+    return embed
 
 
 def chunk_list_on_pred(fn, l):
@@ -72,8 +84,7 @@ def acc_str_len_check(entry, chunked_l, l):
     return sum(chunked_str_lens) + len(entry.screen_name) > max_char
 
 
-
-def do_search(api):
+def do_search(api, discord_url):
 
     user_list = api.GetFriends()
     # this whole chunk this is because of how I'm doing twitter's feed check
@@ -102,21 +113,19 @@ def do_search(api):
             }
 
             query_str = urllib.parse.urlencode(search_params)
-            print(query_str)
             search_res = api.GetSearch(raw_query=query_str)
             while search_res:
-                for tweet in reversed(search_res): #get oldest first to make sense when we post
-                    if tweet.media: #should always be true
-                        for media in tweet.media:
-
-                            url = media.media_url
-                            print('checking %s:%s' % (tweet.id, url))
+                for tweet in reversed(search_res):  # get oldest first to make sense when we post
+                    if tweet.media:  # should always be true
+                        print('checking {}:{}'.format(tweet.user.screen_name, tweet.id_str))
+                        for idx, media in enumerate(tweet.media):
                             if fumo_detector.check(url) > 0:
-                                print('detected fumo')
                                 full_url = media.expanded_url
                                 try:
                                     api.PostRetweet(status_id=tweet.id)
-                                    send_message('%s' % full_url)
+                                    embed = get_twitter_embed(tweet, idx)
+                                    send_embed(discord_url, embed)
+                                    continue  # can only retweet thing once, so skip other media
                                 except twitter.error.TwitterError as e:
                                     # retweet error, don't care. shouldn't happen but happens on 2nd run of debug
                                     # not sure why it's a list, but that's how it's given to me in the api
@@ -125,8 +134,7 @@ def do_search(api):
                                         pass
                                     else:
                                         raise e
-                            else:
-                                print('no soft girls for this tweet')
+
                     search_params['since_id'] = tweet.id
                     highest_tweet_id = max(tweet.id, highest_tweet_id)
                 query_str = urllib.parse.urlencode(search_params)
@@ -142,20 +150,18 @@ def do_search(api):
 
 def main():
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    print("Doing mentions since %s" % data['since_id'])
-
     api = twitter.Api(consumer_key=data['cons_key'],
                       consumer_secret=data['cons_secret'],
                       access_token_key=data['access_token'],
                       access_token_secret=data['access_token_secret'])
 
-    do_mentions(api)
-
-    do_search(api)
+    do_search(api, discord_url)
 
 
 json_file = fn = os.path.join(os.path.dirname(__file__), "twitter.json")
 
-data = load_json_file() #we make this global cause life easier
+data = load_json_file()  # we make this global cause life easier
 discord_url = data['discord_webhook_url']
-main()
+
+if __name__ == '__main__':
+    main()
