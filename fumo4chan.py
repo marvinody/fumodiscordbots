@@ -91,7 +91,9 @@ def fix_html_tags(com):
     for br in soup.find_all('br'):
         br.replace_with('\n')
     text = soup.get_text()
-    return text.replace("<s>", "||").replace("</s>", "||")
+    # spoilers don't work within code blocks, so not doing them for now
+    #text = text.replace("<s>", "||").replace("</s>", "||")
+    return text
 
 
 def send_message(message):
