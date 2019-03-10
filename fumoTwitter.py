@@ -45,7 +45,7 @@ def get_twitter_embed(tweet, idx):
         "author": {
             "name": "{}(@{})".format(tweet.user.name, tweet.user.screen_name),
             "url": "https://twitter.com/{}".format(tweet.user.screen_name),
-            "icon_url": tweet.user.profile_image_url_https,
+            "icon_url": tweet.user.profile_image_url,
         },
         'url': "https://twitter.com/{}/status/{}".format(tweet.user.screen_name, tweet.id_str),
         'footer': {
