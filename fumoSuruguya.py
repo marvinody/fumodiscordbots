@@ -51,6 +51,8 @@ def get_new_item_embed(item):
 
 
 def check_item(item):
+    if item.availability == 'List Price':
+        return  # don't care if the thing is the list price
     c.execute(
         "SELECT productCode, price FROM suruguya WHERE productCode=? AND price=?",
         (
@@ -68,8 +70,6 @@ def check_item(item):
 
     resp = get_new_item_embed(item)
     send_embed(resp)
-    # prevent discord rate limiting us
-    time.sleep(1)
 
 
 def send_embed(embed):
@@ -84,7 +84,8 @@ def send_embed(embed):
         jsonError = json.loads(response.text)
         sleepTime = jsonError['retry_after'] / 1000
         print("Sleeping for {}s".format(sleepTime))
-        time.sleep(sleepTime)
+        time.sleep(sleepTime)  # goodnight my prince
+        send_embed(embed)  # attempt sending again
 
 
 def main():
