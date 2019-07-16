@@ -45,8 +45,6 @@ def get_new_item_embed(item):
             'url': item.imageURL,
         },
     }
-    print(embed)
-
     return embed
 
 

@@ -1,4 +1,3 @@
--e git+git@bitbucket:marvinody/amiami.git@2afda958304274575840bca491bc879effd7780c#egg=amiami
 beautifulsoup4==4.6.0
 certifi==2018.4.16
 chardet==3.0.4
