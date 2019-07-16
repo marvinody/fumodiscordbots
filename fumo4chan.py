@@ -37,8 +37,8 @@ def update_thread():
             if('ext' in post and post['ext'] in ('.jpg', '.png', '.gif')):
                 name, url = get_name_and_url_from_post(post)
                 files.append({
-                    name: name,
-                    url: url
+                    'name': name,
+                    'url': url
                 })
 
             time.sleep(1)  # delay to prevent spamming links?
