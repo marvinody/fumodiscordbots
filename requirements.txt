@@ -5,8 +5,12 @@ chardet==3.0.4
 ez-setup==0.9
 html5lib==1.0.1
 idna==2.7
+pep8==1.7.1
 python-dateutil==2.7.5
 requests==2.19.1
 six==1.11.0
+soupsieve==1.9
+suruguya==0.0.2
 urllib3==1.23
 webencodings==0.5.1
+yapf==0.28.0
