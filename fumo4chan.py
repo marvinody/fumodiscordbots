@@ -1,21 +1,23 @@
 #!/usr/bin/python3.5
-import requests
 import gc
-import json
-import re
-import feedparser
-from pprint import pprint
-from datetime import datetime
-from threading import Timer
-import sys
-import os
-from bs4 import BeautifulSoup
 import html
+import json
+import os
+import re
+import sys
 import time
-import numpy as np
-import cv2
+from datetime import datetime
+from pprint import pprint
+from threading import Timer
 from urllib.request import urlopen
+
+import numpy as np
+import requests
+
+import cv2
+import feedparser
 import fumo_detector
+from bs4 import BeautifulSoup
 
 
 def update_thread():
@@ -156,7 +158,7 @@ def check_new_data():
                 and
                 r.json()['posts'][0]['archived'] == 1
             )
-          ):
+        ):
 
             if not load_new_thread():
                 return
@@ -227,11 +229,13 @@ def sadpanda_login():
             "UserName": sadpanda_user,
             "PassWord": sadpanda_pass,
             "method": "login"
-         }
-     )
+        }
+    )
     return cookies
 
 # creates a sadpanda gallery
+
+
 def sadpanda_create(title):
     if not data['upload_to_sadpanda']:
         return
@@ -279,10 +283,10 @@ def sadpanda_add(url_list, gid):
             idx = idx + 1
 
         req = sp.post(
-                sadpanda_add_url % gid,
-                cookies=sp.cookies,
-                files=files
-            )
+            sadpanda_add_url % gid,
+            cookies=sp.cookies,
+            files=files
+        )
 
 
 json_file = os.path.join(os.path.dirname(__file__), "thread.json")
