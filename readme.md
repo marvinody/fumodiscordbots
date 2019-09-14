@@ -14,6 +14,7 @@ Bots for
 * Buyee
 * Twitter
 * Facebook
+* Suruguya
 
 
 
@@ -42,3 +43,7 @@ Bot is [here](https://twitter.com/FumoHonkBot)
 ## Facebook
 
 * Go through fumo facebook page and link anything that has an image, pretty much
+
+
+## Suruguya
+* Checks suruguya for `東方 ふもふも ぬいぐるみ`  and links any different priced items to the discord channel
