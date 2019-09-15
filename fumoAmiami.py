@@ -133,9 +133,9 @@ def send_embed(embed, webhook_url):
                       payload_json,
                       headers={'Content-Type': 'application/json'})
     if response.status_code != 200 and response.status_code != 204:
-        print("Error: ", response.text["message"])
         jsonError = json.loads(response.text)
         sleepTime = (jsonError['retry_after'] / 1000) + 1
+        print("Error: ", jsonError["message"])
         print("Sleeping for {}s".format(sleepTime))
         time.sleep(sleepTime)  # goodnight my prince
         send_embed(embed, webhook_url)  # attempt sending again
