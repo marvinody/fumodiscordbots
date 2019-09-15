@@ -11,13 +11,13 @@ from pprint import pprint
 from threading import Timer
 from urllib.request import urlopen
 
-import numpy as np
 import requests
+from bs4 import BeautifulSoup
 
 import cv2
 import feedparser
 import fumo_detector
-from bs4 import BeautifulSoup
+import numpy as np
 
 
 def update_thread():
@@ -28,18 +28,15 @@ def update_thread():
     thread_json = requests.get(url).json()
     files = []
     for post in thread_json['posts']:
-        if(post['no'] > data['pno']):
+        if (post['no'] > data['pno']):
             # new post detected
             print("New Post Detected %i" % post['no'])
             text = handle_post_text(post)
             send_message(text)
             data['pno'] = post['no']
-            if('ext' in post and post['ext'] in ('.jpg', '.png', '.gif')):
+            if ('ext' in post and post['ext'] in ('.jpg', '.png', '.gif')):
                 name, url = get_name_and_url_from_post(post)
-                files.append({
-                    'name': name,
-                    'url': url
-                })
+                files.append({'name': name, 'url': url})
 
             time.sleep(1)  # delay to prevent spamming links?
             # discord ended up eating a bunch of posts even though they were logged
@@ -50,17 +47,11 @@ def update_thread():
 
 
 def get_name_and_url_from_post(post):
-    return (
-        "{filename}{ext}".format(
-            filename=html.unescape(post['filename']),
-            ext=post['ext']
-        ),
-        "https://i.4cdn.org/{board}/{time}{ext}".format(
-            board='jp',
-            time=post['tim'],
-            ext=post['ext']
-        )
-    )
+    return ("{filename}{ext}".format(filename=html.unescape(post['filename']),
+                                     ext=post['ext']),
+            "https://i.4cdn.org/{board}/{time}{ext}".format(board='jp',
+                                                            time=post['tim'],
+                                                            ext=post['ext']))
 
 
 def handle_post_text(post):
@@ -71,11 +62,9 @@ def handle_post_text(post):
         body = '```%s```' % com
     if 'filename' in post:
         name, url = get_name_and_url_from_post(post)
-        body = "{body} \n `{name}` {url} ".format(
-            body=body,
-            name=name,
-            url=url
-        )
+        body = "{body} \n `{name}` {url} ".format(body=body,
+                                                  name=name,
+                                                  url=url)
 
         try:  # crashes when gif and I suspect webm too
             # add check later to prevent that
@@ -129,8 +118,9 @@ def load_new_thread():
     mention_str = ''
     if attempt is not None:
         data['thread'] = attempt
-        data['sp_gid'] = sadpanda_create("Fumo - #"+str(attempt))
-        data['pno'] = attempt-1  # make sure to print out THIS post, so sub 1
+        if 'upload_to_sadpanda' in data:
+            data['sp_gid'] = sadpanda_create("Fumo - #" + str(attempt))
+        data['pno'] = attempt - 1  # make sure to print out THIS post, so sub 1
         send_message(mention_str + ' new thread loaded')
         return True
     else:
@@ -150,15 +140,9 @@ def check_new_data():
         postno = data['thread']
         url = json_url_format.format(board='jp', postno=postno)
         r = requests.get(url)
-        if (
-            r.status_code == 404
-            or
-            (
-                'archived' in r.json()['posts'][0]
-                and
-                r.json()['posts'][0]['archived'] == 1
-            )
-        ):
+        if (r.status_code == 404
+                or ('archived' in r.json()['posts'][0]
+                    and r.json()['posts'][0]['archived'] == 1)):
 
             if not load_new_thread():
                 return
@@ -180,17 +164,24 @@ def find_new_thread():
     points_needed = 40
 
     poss_fields = {
-        'semantic_url': [
-            {'string': 'fumo', 'points': points_needed}
-        ],
-        'sub': [
-            {'string': 'fumo', 'points': points_needed}
-        ],
-        'com': [
-            {'string': 'fumo', 'points': points_needed / 5},
-            {'string': 'plush', 'points': points_needed / 5},
-            {'string': 'fate', 'points': -points_needed / 5}
-        ]
+        'semantic_url': [{
+            'string': 'fumo',
+            'points': points_needed
+        }],
+        'sub': [{
+            'string': 'fumo',
+            'points': points_needed
+        }],
+        'com': [{
+            'string': 'fumo',
+            'points': points_needed / 5
+        }, {
+            'string': 'plush',
+            'points': points_needed / 5
+        }, {
+            'string': 'fate',
+            'points': -points_needed / 5
+        }]
     }
 
     poss_fields_for_string = ['semantic_url', 'sub', 'com']
@@ -223,47 +214,44 @@ def find_new_thread():
 def sadpanda_login():
     # cause login doesn't return cookies cause fmlamirite
     cookies = sp.get(sadpanda_base_url).cookies
-    r = sp.post(
-        sadpanda_api_url,
-        data={
-            "UserName": sadpanda_user,
-            "PassWord": sadpanda_pass,
-            "method": "login"
-        }
-    )
+    r = sp.post(sadpanda_api_url,
+                data={
+                    "UserName": sadpanda_user,
+                    "PassWord": sadpanda_pass,
+                    "method": "login"
+                })
     return cookies
+
 
 # creates a sadpanda gallery
 
 
 def sadpanda_create(title):
-    if not data['upload_to_sadpanda']:
+    if 'upload_to_sadpanda' not in data:
         return
     if 'PHPSESSID' not in sp.cookies:
         sadpanda_login()
-    req = sp.post(
-        sadpanda_api_url,
-        cookies=sp.cookies,
-        data={
-            "method": "creategallery",
-            "gname": title,
-            "tos": 1,
-            "comment": "Autogenerated thread submission"
-        }
-    )
+    req = sp.post(sadpanda_api_url,
+                  cookies=sp.cookies,
+                  data={
+                      "method": "creategallery",
+                      "gname": title,
+                      "tos": 1,
+                      "comment": "Autogenerated thread submission"
+                  })
     print(req.text)
     return req.json()['gid']
 
 
 def chunks(l, n):
     n = max(1, n)
-    return (l[i:i+n] for i in range(0, len(l), n))
+    return (l[i:i + n] for i in range(0, len(l), n))
 
 
 def sadpanda_add(url_list, gid):
     if not url_list:
         return
-    if not data['upload_to_sadpanda']:
+    if 'upload_to_sadpanda' not in data:
         return
     if 'PHPSESSID' not in sp.cookies:
         sadpanda_login()
@@ -276,17 +264,12 @@ def sadpanda_add(url_list, gid):
         idx = 1
         for entry in sub_list:
             # filename filled with 0's
-            files["file"+str(idx).zfill(2)] = (
-                entry['name'],
-                requests.get(entry['url']).content
-            )
+            files["file" + str(idx).zfill(2)] = (entry['name'],
+                                                 requests.get(
+                                                     entry['url']).content)
             idx = idx + 1
 
-        req = sp.post(
-            sadpanda_add_url % gid,
-            cookies=sp.cookies,
-            files=files
-        )
+        req = sp.post(sadpanda_add_url % gid, cookies=sp.cookies, files=files)
 
 
 json_file = os.path.join(os.path.dirname(__file__), "thread.json")
@@ -297,9 +280,8 @@ sp = requests.Session()
 sadpanda_base_url = "https://sadpanda.moe/alice/"
 sadpanda_api_url = sadpanda_base_url + "api.php"
 sadpanda_add_url = sadpanda_base_url + "manage?act=add&gid=%s"
-sadpanda_user = data['sadpanda_user']
-sadpanda_pass = data['sadpanda_pass']
-
+sadpanda_user = data.get('sadpanda_user')
+sadpanda_pass = data.get('sadpanda_pass')
 
 json_url_format = "https://a.4cdn.org/{board}/thread/{postno}.json"
 catalog_url_format = "https://a.4cdn.org/{board}/catalog.json"
