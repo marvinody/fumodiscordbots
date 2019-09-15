@@ -60,7 +60,7 @@ def get_new_item_embed(item):
     color = hash(item.productCode) % 0xFFFFFF
     embed = {
         'title':
-        '【{}】 - '.format(item.productCode, item.availability),
+        '【{}】 - {}'.format(item.productCode, item.availability),
         'description':
         '{}\n'.format(item.productName),
         'url':
