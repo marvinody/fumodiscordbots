@@ -59,7 +59,7 @@ def send_embed(discord_url, embed):
         sleepTime = jsonError['retry_after'] / 1000
         print("Sleeping for {}s".format(sleepTime))
         time.sleep(sleepTime)  # goodnight my prince
-        send_embed(embed)  # attempt sending again
+        send_embed(discord_url, embed)  # attempt sending again
 
 def update_users(data):
     for userEntry in data['users']:
@@ -67,12 +67,11 @@ def update_users(data):
             user = fetch_user(userEntry['username'])
             for image in reversed(user['images']):
                 # if the image is newer, then we can post it!
-                if userEntry['most_recent_id'] < image['id']:
+                if userEntry['most_recent_id'] < image['id'] and 'fumofumo' in image['text']:
                     embed = make_embed(user, image)
                     send_embed(data['discord_webhook_url'], embed)
                     # make sure to update this
                     userEntry['most_recent_id'] = image['id']
-            pp.pprint(user)
         except Exception as e:
             print(e)
         finally:
