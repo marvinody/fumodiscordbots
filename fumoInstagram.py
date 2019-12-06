@@ -2,6 +2,7 @@
 import json
 import os
 import pprint
+import random
 import sqlite3
 import time
 from datetime import datetime, timezone
@@ -20,9 +21,11 @@ def load_json_file():
         data = json.load(data_file)
         return data
 
+
 def save_json(data):
     with open(json_file, "w") as outfile:
         json.dump(data, outfile, indent=2)
+
 
 def make_embed(user, image):
     m = md5()
@@ -47,12 +50,13 @@ def make_embed(user, image):
     }
     return embed
 
+
 def send_embed(discord_url, embed):
     payload = {'embeds': [embed], 'username': 'Fumo Gram'}
     payload_json = json.dumps(payload)
     response = requests.post(discord_url,
-                      payload_json,
-                      headers={'Content-Type': 'application/json'})
+                             payload_json,
+                             headers={'Content-Type': 'application/json'})
     if response.status_code != 200 and response.status_code != 204:
         print("Error: ", response.text)
         jsonError = json.loads(response.text)
@@ -61,13 +65,15 @@ def send_embed(discord_url, embed):
         time.sleep(sleepTime)  # goodnight my prince
         send_embed(discord_url, embed)  # attempt sending again
 
+
 def update_users(data):
     for userEntry in data['users']:
         try:
             user = fetch_user(userEntry['username'])
             for image in reversed(user['images']):
                 # if the image is newer, then we can post it!
-                if userEntry['most_recent_id'] < image['id'] and 'fumofumo' in image['text']:
+                if userEntry['most_recent_id'] < image[
+                        'id'] and 'fumofumo' in image['text']:
                     embed = make_embed(user, image)
                     send_embed(data['discord_webhook_url'], embed)
                     # make sure to update this
@@ -77,30 +83,48 @@ def update_users(data):
         finally:
             save_json(data)
 
+
 def fetch_user(username):
+    proxy_id = random.randint(0, 32)
     url = 'https://www.instagram.com/{}/?__a=1'.format(username)
     user = requests.get(url).json()
     return userReducer(user)
 
+
 def userReducer(userData):
-  user = userData['graphql']['user']
-  return {
-    "username": user['username'],
-    "profile_pic": user['profile_pic_url'],
-    "images": [imageReducer(imageData) for imageData in user['edge_owner_to_timeline_media']['edges']]
-  }
+    user = userData['graphql']['user']
+    return {
+        "username":
+        user['username'],
+        "profile_pic":
+        user['profile_pic_url'],
+        "images": [
+            imageReducer(imageData)
+            for imageData in user['edge_owner_to_timeline_media']['edges']
+        ]
+    }
+
 
 def imageReducer(imageData):
     img = imageData['node']
     return {
-      "text": img['edge_media_to_caption']['edges'][0]['node']['text'] if img['edge_media_to_caption']['edges'] else "",
-      "image_url": img['display_url'],
-      "thumbnail_url":img['thumbnail_src'],
-      "is_video": img['is_video'],
-      "id": img['id'],
-      "shortcode": img['shortcode'],
-      "timestamp":datetime.fromtimestamp(img['taken_at_timestamp']).isoformat()
+        "text":
+        img['edge_media_to_caption']['edges'][0]['node']['text']
+        if img['edge_media_to_caption']['edges'] else "",
+        "image_url":
+        img['display_url'],
+        "thumbnail_url":
+        img['thumbnail_src'],
+        "is_video":
+        img['is_video'],
+        "id":
+        img['id'],
+        "shortcode":
+        img['shortcode'],
+        "timestamp":
+        datetime.fromtimestamp(img['taken_at_timestamp']).isoformat()
     }
+
 
 def main():
     data = load_json_file()  # we make this global cause life easier
