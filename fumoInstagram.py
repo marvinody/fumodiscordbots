@@ -73,8 +73,7 @@ def update_users(data):
             user = fetch_user(userEntry['username'])
             for image in reversed(user['images']):
                 # if the image is newer, then we can post it!
-                if userEntry['most_recent_id'] < image[
-                        'id'] and 'fumofumo' in image['text']:
+                if userEntry['most_recent_id'] < image['id']:
                     embed = make_embed(user, image)
                     send_embed(data['discord_webhook_url'], embed)
                     # make sure to update this
