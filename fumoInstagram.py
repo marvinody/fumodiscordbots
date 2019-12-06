@@ -3,6 +3,7 @@ import json
 import os
 import pprint
 import random
+import re
 import sqlite3
 import time
 from datetime import datetime, timezone
@@ -84,15 +85,24 @@ def update_users(data):
             save_json(data)
 
 
+jsonSearcher = re.compile(r"_sharedData = ({.*);</script>", re.MULTILINE)
+
+
 def fetch_user(username):
     proxy_id = random.randint(0, 32)
-    url = 'https://www.instagram.com/{}/?__a=1'.format(username)
-    user = requests.get(url).json()
+    insta_url = 'https://www.instagram.com/{}/?__a=1'.format(username)
+    url = "https://images{}-focus-opensocial.googleusercontent.com/gadgets/proxy?container=none&url={}".format(
+        random.randint(0, 32), insta_url)
+    html = requests.get(url).text
+
+    result = jsonSearcher.search(html)
+    userJsonStr = result.group(1)
+    user = json.loads(userJsonStr)
     return userReducer(user)
 
 
 def userReducer(userData):
-    user = userData['graphql']['user']
+    user = userData["entry_data"]["ProfilePage"][0]['graphql']['user']
     return {
         "username":
         user['username'],
