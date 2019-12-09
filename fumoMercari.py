@@ -25,6 +25,8 @@ def get_new_item_embed(item):
     color = int.from_bytes(m.digest()[-3:], "little")
     embed = {
         'title':
+        '【{}】'.format(item.productCode),
+        'description':
         '{}\n'.format(item.productName),
         'url':
         '{}'.format(item.productURL),
