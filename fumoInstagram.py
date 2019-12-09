@@ -14,12 +14,6 @@ from hashlib import md5
 import dateutil.parser
 import requests
 
-try:
-    import fumo_detector
-    print("fumo_detector loaded successfully")
-except ImportError:
-    print("Couldn't import fumo_detector, continuing")
-
 json_file = fn = os.path.join(os.path.dirname(__file__), "instagram.json")
 pp = pprint.PrettyPrinter(indent=2)
 
@@ -81,10 +75,9 @@ def update_users(data):
             for image in reversed(user['images']):
                 # if the image is newer, then we can post it!
                 if userEntry['most_recent_id'] < image['id']:
-                    if data['use_detector']:
-                        imageUrl = image['thumbnail_url']
-                        if fumo_detector.check(url) == 0:
-                            continue  # if we detect none, skip
+                    # skip if keyword not in post. simple filter
+                    if data['keyword'] not in image['text']:
+                        continue
                     embed = make_embed(user, image)
                     send_embed(data['discord_webhook_url'], embed)
                     # make sure to update this
