@@ -72,7 +72,7 @@ def check_item(item):
 
 def send_embed(embed):
     global discord_url
-    payload = {'embeds': [embed], 'username': 'Fumo Hunter'}
+    payload = {'embeds': [embed], 'username': 'Surugaya'}
     payload_json = json.dumps(payload)
     response = r.post(discord_url,
                       payload_json,
