@@ -171,7 +171,7 @@ def send_embed(embed):
 def main():
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     buyee_data = {
-        'query': 'ふもふも',
+        'query': '東方 ふもふも',
         'appid': data['app_id'],
         'output': 'json',
         'page': 1
