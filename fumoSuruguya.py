@@ -29,9 +29,6 @@ def get_new_item_embed(item):
         '{}\n'.format(item.productName),
         'url':
         '{}{}'.format('https://www.suruga-ya.jp/', item.productURL),
-        'footer': {
-            'text': '{}'.format(item.availability),
-        },
         'fields': [
             {
                 'name': 'Price:',
@@ -49,8 +46,6 @@ def get_new_item_embed(item):
 
 
 def check_item(item):
-    if item.availability == 'List Price':
-        return  # don't care if the thing is the list price
     c.execute(
         "SELECT productCode, price FROM suruguya WHERE productCode=? AND price=?",
         (
