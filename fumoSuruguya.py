@@ -28,7 +28,7 @@ def get_new_item_embed(item):
         'description':
         '{}\n'.format(item.productName),
         'url':
-        '{}{}'.format('https://www.suruga-ya.jp/', item.productURL),
+        '{}'.format(item.productURL),
         'fields': [
             {
                 'name': 'Price:',
