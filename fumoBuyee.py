@@ -152,20 +152,32 @@ def check_items(items):
         item = fetch_extended_item_info(item)
         if status is ItemStatus.New:
             resp = get_new_item_embed(item)
-            send_embed(resp)
-            # prevent discord rate limiting us
-            time.sleep(1)
+            send_embeds(resp)
 
 
-def send_embed(embed):
+def send_embeds(embed):
     global discord_url
+    if type(discord_url) is list:
+        for url in discord_url:
+            send_embed(embed, url)
+    else:
+        send_embed(embed, discord_url)
+
+
+def send_embed(embed, url):
     payload = {'embeds': [embed], 'username': 'Yahoo Auctions Japan'}
     payload_json = json.dumps(payload)
-    response = r.post(discord_url,
+    response = r.post(url,
                       payload_json,
                       headers={'Content-Type': 'application/json'})
+
     if response.status_code != 200 and response.status_code != 204:
         print("Error: ", response.text)
+        jsonError = json.loads(response.text)
+        sleepTime = jsonError['retry_after'] / 1000
+        print("Sleeping for {}s".format(sleepTime))
+        time.sleep(sleepTime)
+        send_embed(embed, url)  # attempt sending again
 
 
 def main():

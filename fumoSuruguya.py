@@ -62,23 +62,33 @@ def check_item(item):
     conn.commit()
 
     resp = get_new_item_embed(item)
-    send_embed(resp)
+    send_embeds(resp)
 
 
-def send_embed(embed):
+def send_embeds(embed):
+    global discord_url
+    if type(discord_url) is list:
+        for url in discord_url:
+            send_embed(embed, url)
+    else:
+        send_embed(embed, discord_url)
+
+
+def send_embed(embed, url):
     global discord_url
     payload = {'embeds': [embed], 'username': 'Surugaya'}
     payload_json = json.dumps(payload)
-    response = r.post(discord_url,
+    response = r.post(url,
                       payload_json,
                       headers={'Content-Type': 'application/json'})
+
     if response.status_code != 200 and response.status_code != 204:
         print("Error: ", response.text)
         jsonError = json.loads(response.text)
         sleepTime = jsonError['retry_after'] / 1000
         print("Sleeping for {}s".format(sleepTime))
-        time.sleep(sleepTime)  # goodnight my prince
-        send_embed(embed)  # attempt sending again
+        time.sleep(sleepTime)
+        send_embed(embed, url)  # attempt sending again
 
 
 def main():
