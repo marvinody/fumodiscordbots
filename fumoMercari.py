@@ -83,7 +83,7 @@ def main():
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     query = '東方 ふもふも ぬいぐるみ'
 
-    for item in mercari.search(query):
+    for item in mercari.search(query, use_google_proxy=False):
         check_item(item)
 
 
