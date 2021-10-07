@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from enum import Enum
 from hashlib import md5
 
-import dateutil.parser
 import mercari
 import requests as r
 
@@ -20,12 +19,12 @@ def load_json_file():
 
 def get_new_item_embed(item):
     m = md5()
-    m.update(bytes(item.productCode, 'utf8'))
+    m.update(bytes(item.id, 'utf8'))
     # and then just pull the last 3 bytes and convert to int
     color = int.from_bytes(m.digest()[-3:], "little")
     embed = {
         'title':
-        '【{}】'.format(item.productCode),
+        '【{}】'.format(item.id),
         'description':
         '{}\n'.format(item.productName),
         'url':
@@ -49,12 +48,12 @@ def get_new_item_embed(item):
 def check_item(item):
 
     c.execute("SELECT productCode FROM mercari WHERE productCode=?",
-              (item.productCode, ))
+              (item.id, ))
     if c.fetchone():
         return  # don't care if item has been seen before
 
     c.execute("INSERT INTO mercari VALUES (?, ?)", (
-        item.productCode,
+        item.id,
         item.price,
     ))
     conn.commit()
@@ -93,7 +92,7 @@ def main():
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
     query = '東方 ふもふも ぬいぐるみ'
 
-    for item in mercari.search(query, use_google_proxy=False):
+    for item in mercari.search(query):
         check_item(item)
 
 
