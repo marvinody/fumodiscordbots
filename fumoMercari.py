@@ -52,7 +52,7 @@ def check_item(item):
     if c.fetchone():
         return  # don't care if item has been seen before
 
-    c.execute("INSERT INTO mercari VALUES (?, ?)", (
+    c.execute("INSERT INTO mercari (productCode, price) VALUES (?, ?)", (
         item.id,
         item.price,
     ))
@@ -104,6 +104,7 @@ schema = """
 CREATE TABLE IF NOT EXISTS "mercari" (
     "productCode" TEXT NOT NULL,
     "price" INTEGER,
+    "time" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY ("productCode", "price")
 );
 """
