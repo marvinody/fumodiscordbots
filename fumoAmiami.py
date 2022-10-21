@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from enum import Enum
 
 import amiami
-import dateutil.parser
 import requests as r
 
 db_file = os.path.join(os.path.dirname(__file__), "fumo.db")
