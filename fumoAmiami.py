@@ -36,8 +36,6 @@ def main():
     roleIdToPing = data['roleIdToPing'] if 'roleIdToPing' in data else None
 
     postedItem = False
-    print(results.items)
-    print(len(results.items))
     for item in results.items:
         print(item.productName)
         postedItem = postedItem or check_item(item, conn, c, discord_url)
