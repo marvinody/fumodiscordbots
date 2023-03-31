@@ -108,6 +108,7 @@ def check_item(item, conn, c, webhook_url):
             update_item(item, conn, c)
             resp = get_new_item_embed(item)
             send_embed(resp, webhook_url)
+            return item.availability in AVAILABILITY_TO_PING_OVER
         # if it's an old item, we want to not execute stuff below
         return False
     # new item, let's save and send
