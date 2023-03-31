@@ -1,3 +1,4 @@
 {
-  "discord_webhook_url": "url"
+  "discord_webhook_url": "url",
+  "roleIdToPing": "12345"
 }

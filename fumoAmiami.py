@@ -13,6 +13,10 @@ import requests as r
 db_file = os.path.join(os.path.dirname(__file__), "fumo.db")
 json_file = fn = os.path.join(os.path.dirname(__file__), "amiami.json")
 
+AVAILABILITY_TO_PING_OVER = [
+    "Available",
+    "Pre-order"
+]
 
 def main():
 
@@ -29,9 +33,19 @@ def main():
     data = load_json_file()
     discord_url = data['discord_webhook_url']
 
-    for item in results.items:
-        check_item(item, conn, c, discord_url)
+    roleIdToPing = data['roleIdToPing'] if 'roleIdToPing' in data else None
 
+    postedItem = False
+    print(results.items)
+    print(len(results.items))
+    for item in results.items:
+        print(item.productName)
+        postedItem = postedItem or check_item(item, conn, c, discord_url)
+
+    if postedItem and roleIdToPing:
+        msg = make_message(roleIdToPing)
+        send_message(msg, discord_url)
+        
     conn.close()
 
 
@@ -97,13 +111,15 @@ def check_item(item, conn, c, webhook_url):
             resp = get_new_item_embed(item)
             send_embed(resp, webhook_url)
         # if it's an old item, we want to not execute stuff below
-        return
+        return False
     # new item, let's save and send
     print("{} found!".format(item.productName))
     save_item(item, conn, c)
 
     resp = get_new_item_embed(item)
     send_embed(resp, webhook_url)
+
+    return item.availability in AVAILABILITY_TO_PING_OVER
 
 
 def save_item(item, conn, c):
@@ -123,6 +139,23 @@ def update_item(item, conn, c):
             item.productCode,
         ))
     conn.commit()
+
+def make_message(roleIdToPing):
+    return "<@&{}>, fumos have been spotted on amiami for purchase".format(roleIdToPing)
+
+def send_message(message, webhook_url):
+    payload = {'content': message, 'username': 'Fumo Pinger'}
+    payload_json = json.dumps(payload)
+    response = r.post(webhook_url,
+                      payload_json,
+                      headers={'Content-Type': 'application/json'})
+    if response.status_code != 200 and response.status_code != 204:
+        jsonError = json.loads(response.text)
+        sleepTime = (jsonError['retry_after'] / 1000) + 1
+        print("Error: ", jsonError["message"])
+        print("Sleeping for {}s".format(sleepTime))
+        time.sleep(sleepTime)  # goodnight my prince
+        send_message(message, webhook_url)  # attempt sending again
 
 
 def send_embed(embed, webhook_url):
