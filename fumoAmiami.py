@@ -150,6 +150,8 @@ def send_message(message, webhook_url):
                       headers={'Content-Type': 'application/json'})
     if response.status_code != 200 and response.status_code != 204:
         jsonError = json.loads(response.text)
+        if('retry_after' not in jsonError):
+            return
         sleepTime = (jsonError['retry_after'] / 1000) + 1
         print("Error: ", jsonError["message"])
         print("Sleeping for {}s".format(sleepTime))
@@ -165,6 +167,8 @@ def send_embed(embed, webhook_url):
                       headers={'Content-Type': 'application/json'})
     if response.status_code != 200 and response.status_code != 204:
         jsonError = json.loads(response.text)
+        if('retry_after' not in jsonError):
+            return
         sleepTime = (jsonError['retry_after'] / 1000) + 1
         print("Error: ", jsonError["message"])
         print("Sleeping for {}s".format(sleepTime))
