@@ -38,7 +38,7 @@ def main():
     postedItem = False
     for item in results.items:
         print(item.productName)
-        postedItem = postedItem or check_item(item, conn, c, discord_url)
+        postedItem = check_item(item, conn, c, discord_url) or postedItem
 
     if postedItem and roleIdToPing:
         msg = make_message(roleIdToPing)
