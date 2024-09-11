@@ -18,6 +18,8 @@ AVAILABILITY_TO_PING_OVER = [
     "Pre-order"
 ]
 
+KEYWORD_TO_PING_FUMO_ROLE = "fumo"
+
 def main():
 
     conn = sqlite3.connect(db_file)
@@ -34,15 +36,28 @@ def main():
     discord_url = data['discord_webhook_url']
 
     roleIdToPing = data['roleIdToPing'] if 'roleIdToPing' in data else None
+    nonfumoRoleIdToPing = data['nonfumoRoleIdToPing'] if 'nonfumoRoleIdToPing' in data else None
 
     postedItem = False
+    hasFumo = False
     for item in results.items:
-        print(item.productName)
+        print('{}: {}'.format(item.productCode, item.productName))
         postedItem = check_item(item, conn, c, discord_url) or postedItem
+        if postedItem and KEYWORD_TO_PING_FUMO_ROLE in item.productName.lower():
+            hasFumo = True
 
-    if postedItem and roleIdToPing:
-        msg = make_message(roleIdToPing)
-        send_message(msg, discord_url)
+    if postedItem:
+        pings = []
+        msg = "Plushes have been spotted on AmiAmi!"
+        if hasFumo and roleIdToPing:
+            pings.append(make_ping(roleIdToPing))
+            msg = "Fumos have been spotted on AmiAmi!"
+
+        if nonfumoRoleIdToPing:
+            pings.append(make_ping(nonfumoRoleIdToPing))
+
+        fullMsg = "{} {}".format(" ".join(pings), msg)
+        send_message(fullMsg, discord_url)
         
     conn.close()
 
@@ -79,19 +94,20 @@ def get_new_item_embed(item):
         'footer': {
             'text': '{}'.format(item.availability),
         },
-        'fields': [
-            {
-                'name': 'Price:',
-                'value': "{:,}円".format(int(item.price)),
-                'inline': False
-            },
-        ],
+        'fields': [],
         'color':
         color,
         'image': {
             'url': item.imageURL,
         },
     }
+
+    if item.price:
+        embed['fields'].append({
+            'name': 'Price:',
+            'value': "{:,}円".format(int(item.price)),
+            'inline': False
+        })
     return embed
 
 
@@ -139,8 +155,9 @@ def update_item(item, conn, c):
         ))
     conn.commit()
 
-def make_message(roleIdToPing):
-    return "<@&{}>, fumos have been spotted on amiami for purchase".format(roleIdToPing)
+def make_ping(roleIdToPing):
+    return "<@&{}>".format(roleIdToPing)
+
 
 def send_message(message, webhook_url):
     payload = {'content': message, 'username': 'Fumo Pinger'}

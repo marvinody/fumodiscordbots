@@ -1,4 +1,5 @@
 {
   "discord_webhook_url": "url",
-  "roleIdToPing": "12345"
+  "roleIdToPing": "12345",
+  "nonfumoRoleIdToPing": "FILL_HERE"
 }
