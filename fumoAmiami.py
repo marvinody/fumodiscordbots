@@ -41,10 +41,12 @@ def main():
     postedItem = False
     hasFumo = False
     for item in results.items:
-        print('{}: {}'.format(item.productCode, item.productName))
-        postedItem = check_item(item, conn, c, discord_url) or postedItem
-        if postedItem and KEYWORD_TO_PING_FUMO_ROLE in item.productName.lower():
+        print('{}: {} : {}'.format(item.productCode, item.productName, item.availability))
+        postedThisItem = check_item(item, conn, c, discord_url)
+        if postedThisItem and KEYWORD_TO_PING_FUMO_ROLE in item.productName.lower():
             hasFumo = True
+        postedItem = postedItem or postedThisItem
+        
 
     if postedItem:
         pings = []
@@ -120,7 +122,7 @@ def check_item(item, conn, c, webhook_url):
     if oldItem:
         if oldItem[2] != item.availability or oldItem[1] != item.price:
             # probably updated?
-            print("{} updated!".format(item.productName))
+            print("{} updated - {}!".format(item.productName, item.availability))
             update_item(item, conn, c)
             resp = get_new_item_embed(item)
             send_embed(resp, webhook_url)
