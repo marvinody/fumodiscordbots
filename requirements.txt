@@ -1,4 +1,4 @@
-amiami==0.0.10
+amiami==0.2.0
 certifi==2023.7.22
 cffi==1.15.1
 charset-normalizer==3.2.0
