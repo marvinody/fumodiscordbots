@@ -18,6 +18,10 @@ AVAILABILITY_TO_PING_OVER = [
     "Pre-order"
 ]
 
+ITEM_BLOCKLIST = [
+    "GOODS-04530998", # Mobile Fighter G Gundam Chibi Sitting Plush Mascot Touhou Fuhai Master Asia(Released)
+]
+
 KEYWORD_TO_PING_FUMO_ROLE = "fumo"
 
 def main():
@@ -42,6 +46,9 @@ def main():
     hasFumo = False
     for item in results.items:
         print('{}: {} : {}'.format(item.productCode, item.productName, item.availability))
+        if item.productCode in ITEM_BLOCKLIST:
+            print("Skipping blocked item")
+            continue
         postedThisItem = check_item(item, conn, c, discord_url)
         if postedThisItem and KEYWORD_TO_PING_FUMO_ROLE in item.productName.lower():
             hasFumo = True
