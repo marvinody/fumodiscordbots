@@ -1,8 +1,5 @@
-amiami==0.2.0
-certifi==2023.7.22
-cffi==1.15.1
+amiami==0.3.1
 charset-normalizer==3.2.0
-curl-cffi==0.5.7
 idna==3.4
 pycparser==2.21
 requests==2.31.0

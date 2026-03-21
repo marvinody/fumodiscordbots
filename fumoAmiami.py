@@ -34,6 +34,7 @@ def main():
     print(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
     query = "touhou plush"
+    amiami.set_impersonate('chrome136')
     results = amiami.search(query)
 
     data = load_json_file()
